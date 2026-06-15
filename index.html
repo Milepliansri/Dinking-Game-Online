@@ -267,7 +267,6 @@
 
 
     <!-- ================= Modals ================= -->
-    <!-- Alert Modal -->
     <div id="alert-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center; max-width: 320px;">
             <p id="alert-text" style="margin-bottom: 25px; font-size: 1.2rem; font-weight: 700;"></p>
@@ -275,7 +274,6 @@
         </div>
     </div>
 
-    <!-- Leaderboard Modal -->
     <div id="leaderboard-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -287,7 +285,6 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div id="history-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -301,23 +298,28 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        /* =========================================================
-        [สำหรับโฮสต์ภายนอก เช่น GitHub Pages] 
-        ถ้าเอาไฟล์นี้ไปเปิดที่อื่น ให้เปลี่ยนค่า firebaseConfig ด้านล่าง
-        ให้เป็น Config จากโปรเจกต์ Firebase ของคุณเองนะครับ
-        =========================================================
-        */
-        const apiKey = "";
-        const fallbackConfig = { apiKey: apiKey, projectId: "party-game-mock" }; // เปลี่ยนตรงนี้ถ้าไปลงเว็บอื่น
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+        // ==========================================
+        // ตั้งค่า Firebase ของคุณที่นี่ (จัดให้แล้ว!)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA25U1OC8ifcGmx-f6UCMuBUb45dyVsC6g",
+            authDomain: "partygame-e6682.firebaseapp.com",
+            projectId: "partygame-e6682",
+            storageBucket: "partygame-e6682.firebasestorage.app",
+            messagingSenderId: "538291969692",
+            appId: "1:538291969692:web:7b9b993fca59e39e9cd759",
+            measurementId: "G-DL1PD3GPSG"
+        };
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-party-app';
+        
+        // ใช้ Project ID ของคุณเป็นโฟลเดอร์หลักในการเก็บข้อมูล
+        const appId = "partygame-e6682"; 
 
         // State Variables
         let currentUser = null;
@@ -329,20 +331,52 @@
         };
         let timerInterval = null;
 
-        // Base Games (ฉบับย่อให้โค้ดคลีน คุณสามารถเพิ่มได้ตามใจชอบ)
+        // Base Games (ชุดคำถาม 50+ ข้อ)
         const baseGames = [
+            // ความจริง (Truth)
             { cat: 'truth', type: 'ความจริง', text: 'ในวงนี้ คุณคิดว่าใครหน้าตาดีที่สุด? (ไม่ตอบ ดื่ม!)', color: '#0ea5e9' },
             { cat: 'truth', type: 'ความจริง', text: 'บอกความลับที่ไม่มีใครในวงรู้มา 1 ข้อ', color: '#0ea5e9' },
+            { cat: 'truth', type: 'ความจริง', text: 'เคยแอบชอบเพื่อนในวง หรือแฟนเก่าเพื่อนไหม?', color: '#0ea5e9' },
+            { cat: 'truth', type: 'ความจริง', text: 'เรื่องน่าอายที่สุดที่คุณเคยทำตอนเมาคืออะไร?', color: '#0ea5e9' },
+            { cat: 'truth', type: 'ความจริง', text: 'ถ้าต้องติดเกาะกับคนในวง 1 คน จะเลือกใคร เพราะอะไร?', color: '#0ea5e9' },
+            { cat: 'truth', type: 'ความจริง', text: 'เคยโกหกพ่อแม่เพื่อหนีมาเที่ยวไหม? เล่ามา!', color: '#0ea5e9' },
+            { cat: 'truth', type: 'ความจริง', text: 'ในวงนี้ คุณสนิทกับใครน้อยที่สุด? (บอกแล้วชนแก้วกัน!)', color: '#0ea5e9' },
+            
+            // คำท้า (Dare)
             { cat: 'dare', type: 'คำท้า', text: 'ดื่ม 1 ช็อตโดยไม่ใช้มือจับแก้ว!', color: '#ef4444' },
+            { cat: 'dare', type: 'คำท้า', text: 'ให้คนทางขวาโพสต์สเตตัส Facebook ให้คุณ ห้ามลบ 24 ชม.', color: '#ef4444' },
             { cat: 'dare', type: 'คำท้า', text: 'เต้นเพลงที่เพื่อนเปิดให้เป็นเวลา 15 วินาที', color: '#ef4444' },
+            { cat: 'dare', type: 'คำท้า', text: 'โทรหาแฟน/คนคุย แล้วร้องเพลงให้ฟัง 1 ท่อน (ถ้าไม่มี ดื่ม 2 แก้ว)', color: '#ef4444' },
+            { cat: 'dare', type: 'คำท้า', text: 'ให้เพื่อนทางซ้ายเอาปากกา/ลิปสติก วาดรูปบนหน้าคุณ 1 จุด', color: '#ef4444' },
+            { cat: 'dare', type: 'คำท้า', text: 'สลับแก้วกับคนทางขวา แล้วดื่มให้หมด!', color: '#ef4444' },
+
+            // ไม่เคย (Never)
             { cat: 'never', type: 'ไม่เคยเลย', text: 'อ้วกแล้วหลับคาห้องน้ำ (ใครเคย ดื่ม!)', color: '#f59e0b' },
+            { cat: 'never', type: 'ไม่เคยเลย', text: 'ร้องไห้ฟูมฟายตอนเมา (ใครเคย ดื่ม!)', color: '#f59e0b' },
             { cat: 'never', type: 'ไม่เคยเลย', text: 'ทักแชทไปหาแฟนเก่าตอนเมา (ใครเคย ดื่ม!)', color: '#f59e0b' },
+            { cat: 'never', type: 'ไม่เคยเลย', text: 'โดนตำรวจเรียกเป่าแอลกอฮอล์ (ใครเคย ดื่ม!)', color: '#f59e0b' },
+            { cat: 'never', type: 'ไม่เคยเลย', text: 'ลืมจ่ายค่าเหล้าแล้วชิ่งกลับก่อน (ใครเคย ดื่ม!)', color: '#f59e0b' },
+
+            // ชี้ชะตา (Vote)
             { cat: 'vote', type: 'ชี้ชะตา', text: 'นับ 1-3 ชี้คนที่ "เจ้าชู้ที่สุด" โดนชี้เยอะสุด ดื่ม!', color: '#8b5cf6' },
             { cat: 'vote', type: 'ชี้ชะตา', text: 'นับ 1-3 ชี้คนที่ "มีโอกาสเมาพับคนแรก" โดนชี้เยอะสุด ดื่ม!', color: '#8b5cf6' },
-            { cat: 'rule', type: 'กฎสวรรค์', text: 'ตั้งกฎ 1 ข้อ (เช่น ห้ามพูดคำหยาบ) ใครเผลอ ดื่ม!', color: '#10b981' },
+            { cat: 'vote', type: 'ชี้ชะตา', text: 'นับ 1-3 ชี้คนที่ "ขี้งกที่สุดในวง" โดนชี้เยอะสุด ดื่ม!', color: '#8b5cf6' },
+            { cat: 'vote', type: 'ชี้ชะตา', text: 'นับ 1-3 ชี้คนที่ "แต่งตัวดูดีสุดคืนนี้" คนชนะ แจกเหล้า 1 แก้ว!', color: '#8b5cf6' },
+            { cat: 'vote', type: 'ชี้ชะตา', text: 'นับ 1-3 ชี้คนที่ "สายเปย์ที่สุด" คนโดนชี้ต้องเลี้ยงมิกเซอร์รอบหน้า!', color: '#8b5cf6' },
+
+            // กฎสวรรค์ (Rule)
+            { cat: 'rule', type: 'กฎสวรรค์', text: 'ตั้งกฎ 1 ข้อ (เช่น ห้ามพูดคำหยาบ) ใครเผลอ ดื่ม! (กฎอยู่ถึงกว่าจะมีการ์ดใบใหม่)', color: '#10b981' },
             { cat: 'rule', type: 'กฎสวรรค์', text: 'กฎใหม่: ก่อนดื่มทุกคนต้องพูดว่า "ทรงพระเจริญ" ใครลืม ดื่มเบิ้ล!', color: '#10b981' },
-            { cat: 'minigame', type: 'มินิเกม', text: 'ต่อคำ: หมวด "ยี่ห้อรถยนต์" วนขวา ใครช้า ดื่ม!', color: '#ec4899' },
-            { cat: 'minigame', type: 'มินิเกม', text: 'เกมนับเลข: ห้ามพูดเลข 3 ให้ตบมือแทน ใครพลาด ดื่ม!', color: '#ec4899' }
+            { cat: 'rule', type: 'กฎสวรรค์', text: 'กฎใหม่: ห้ามทุกคนจับโทรศัพท์มือถือ ใครจับโดนทำโทษดื่ม 1 ช็อต', color: '#10b981' },
+            { cat: 'rule', type: 'กฎสวรรค์', text: 'กฎใหม่: ให้เรียกชื่อคนอื่นด้วยชื่อสัตว์เท่านั้น (ไอ้หมา, ไอ้แมว) ใครเรียกชื่อจริง ดื่ม!', color: '#10b981' },
+            { cat: 'rule', type: 'กฎสวรรค์', text: 'กฎใหม่: คนที่ได้การ์ดใบนี้ กลายเป็น "เจ้านาย" สั่งใครให้ชงเหล้าก็ได้ 3 ตา', color: '#10b981' },
+
+            // มินิเกม (Mini Game)
+            { cat: 'minigame', type: 'มินิเกม', text: 'เกมต่อคำ: หมวด "ยี่ห้อรถยนต์" วนขวา ใครซ้ำหรือคิดไม่ออก ดื่ม!', color: '#ec4899' },
+            { cat: 'minigame', type: 'มินิเกม', text: 'เกมนับเลข: ห้ามพูดเลขที่มี 3 หรือหาร 3 ลงตัว ให้ตบมือแทน ใครพลาด ดื่ม!', color: '#ec4899' },
+            { cat: 'minigame', type: 'มินิเกม', text: 'เกมผลไม้: ร้องเพลงช้าง แล้วต่อด้วยชื่อผลไม้ ใครซ้ำ/ช้า ดื่ม!', color: '#ec4899' },
+            { cat: 'minigame', type: 'มินิเกม', text: 'เป่ายิ้งฉุบ: คุณต้องเป่ายิ้งฉุบกับคนที่อยู่ตรงข้าม ใครแพ้ดื่ม!', color: '#ec4899' },
+            { cat: 'minigame', type: 'มินิเกม', text: 'จ้องตา: จ้องตากับคนทางซ้ายมือ ห้ามกระพริบตา ใครกระพริบก่อน ดื่ม!', color: '#ec4899' }
         ];
 
         // --- Core Utils ---
@@ -361,14 +395,11 @@
         // --- Firebase Init ---
         const initAuth = async () => {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // สำหรับเว็บที่รันเองบน GitHub ใช้ Auth แบบไม่ระบุตัวตน
+                await signInAnonymously(auth);
             } catch (e) {
                 console.error(e);
-                window.showAlert("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรชดูนะ");
+                window.showAlert("การเชื่อมต่อฐานข้อมูลมีปัญหา ลองรีเฟรชหน้าเว็บดูอีกครั้ง");
             }
         };
 
@@ -376,13 +407,17 @@
             currentUser = user;
             if(user) switchScreen('home-screen');
         });
+        
+        // เริ่มล็อกอินทันทีที่เปิดเว็บ
         initAuth();
 
+        // ฐานข้อมูลอ้างอิงของห้องเกม
         const getRoomRef = (roomId) => doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
 
         // --- Room Actions ---
         window.createRoom = async () => {
             if (!currentUser) return;
+            // สุ่มรหัสห้อง 4 หลัก
             const roomId = Math.floor(1000 + Math.random() * 9000).toString();
             try {
                 await setDoc(getRoomRef(roomId), {
@@ -390,16 +425,24 @@
                     history: [], state: 'setup', currentCard: null, lastUpdate: new Date()
                 });
                 joinRoomLogic(roomId);
-            } catch (e) { console.error(e); window.showAlert("สร้างห้องไม่สำเร็จ!"); }
+            } catch (e) { 
+                console.error(e); 
+                window.showAlert("สร้างห้องไม่สำเร็จ! ตรวจสอบสิทธิ์ Database ของคุณ"); 
+            }
         };
 
         window.joinRoom = async () => {
             const roomId = document.getElementById('room-input').value.trim();
             if(roomId.length !== 4) return window.showAlert("ใส่รหัสห้อง 4 หลักให้ครบก่อน!");
             
-            const docSnap = await getDoc(getRoomRef(roomId));
-            if (docSnap.exists()) joinRoomLogic(roomId);
-            else window.showAlert("หาห้องไม่เจอ เช็ครหัสอีกทีนะ!");
+            try {
+                const docSnap = await getDoc(getRoomRef(roomId));
+                if (docSnap.exists()) joinRoomLogic(roomId);
+                else window.showAlert("หาห้องไม่เจอ เช็ครหัสอีกทีนะ!");
+            } catch (e) {
+                console.error(e);
+                window.showAlert("เชื่อมต่อห้องไม่ได้ อาจเป็นเพราะตั้งค่า Database ยังไม่เสร็จ");
+            }
         };
 
         function joinRoomLogic(roomId) {
@@ -408,6 +451,8 @@
             document.getElementById('game-room-id-display').innerText = `รหัส: ${roomId}`;
             
             if (unsubscribeRoom) unsubscribeRoom();
+            
+            // รอรับข้อมูลแบบ Real-time
             unsubscribeRoom = onSnapshot(getRoomRef(roomId), (docSnap) => {
                 if (docSnap.exists()) {
                     localRoomData = docSnap.data();
@@ -523,7 +568,7 @@
             };
 
             let newHistory = [...localRoomData.history, newCardObj];
-            if(newHistory.length > 15) newHistory.shift();
+            if(newHistory.length > 15) newHistory.shift(); // เก็บประวัติแค่ 15 ตาหลังสุด
 
             await updateDoc(getRoomRef(currentRoomId), { currentCard: newCardObj, history: newHistory });
         };
@@ -537,7 +582,6 @@
                 return p;
             });
             await updateDoc(getRoomRef(currentRoomId), { players: newPlayers });
-            // Let the local UI show a quick toast/alert without writing to DB for the toast
             alert(`จัดไป! บวก 1 แก้วให้ ${targetName} 🍺`);
         };
 
